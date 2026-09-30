@@ -43,7 +43,7 @@ Phone number used site-wide: **+1-888-609-1015** (edit it once in `site.config.j
 | `src/assets/` | CSS, JS, images |
 | `src/admin/` | Admin portal (blog CMS + leads) |
 | `supabase/schema.sql` | Leads / admins / settings tables with row-level security |
-| `.github/workflows/deploy.yml` | Build and deploy to static.app on push, daily, or on demand |
+| `.github/workflows/deploy.yml` | Build and deploy the site to static.app and the admin to GitHub Pages (on push, daily, or on demand) |
 
 ## SEO & ranking features included
 
@@ -78,7 +78,9 @@ Until both are set, the workflow still builds the site and attaches it as a down
 
 ### 2. Admin portal: blog publishing
 
-The admin lives at `https://<your-site>/admin/`.
+The admin lives at **https://alphaneeraj.github.io/AGT-Static-App/admin/**. `/admin/` on the site redirects there.
+
+> **Why GitHub Pages?** static.app sends `Content-Security-Policy: connect-src 'self' https://*.static.domains https://static.app`, which stops pages on the site from calling `api.github.com` or Supabase from the browser. The build therefore writes the admin to `dist-admin/`, and the workflow publishes it to GitHub Pages. For the same reason, quote forms send leads as a normal form POST into a hidden iframe (url-encoded, to PostgREST) instead of using `fetch()`. Google Analytics requests may be blocked by the same policy.
 
 It needs a GitHub **fine-grained personal access token**:
 [github.com/settings/personal-access-tokens/new](https://github.com/settings/personal-access-tokens/new)
