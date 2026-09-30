@@ -1,6 +1,6 @@
 # AGT-Static-App
 
-Promotional website for **[Airlines Group Travel](https://www.airlinesgrouptravel.com)** hosted on **[static.app](https://static.app)** at `https://airlinesgrouptravel.static.app`. It includes:
+Promotional website for **[Airlines Group Travel](https://www.airlinesgrouptravel.com)** hosted on **[static.app](https://static.app)** at `https://airlinesgrouptravel.staticdomains.app`. It includes:
 
 - An SEO-ready static site: 33+ pages, schema, breadcrumbs, and a sitemap that builds itself
 - A **blog** managed from an **admin portal** at `/admin/` with a rich text editor
@@ -66,7 +66,7 @@ Phone number used site-wide: **+1-888-609-1015** (edit it once in `site.config.j
 ### 1. static.app hosting
 
 1. Sign in at static.app and create a site (for example, upload the `site-dist` zip from the first GitHub Actions run, or any placeholder file). Name it **airlinesgrouptravel**.
-2. Check the site's address. If it isn't `https://airlinesgrouptravel.static.app`, update `siteUrl` in `site.config.json`. Canonicals, the sitemap and schema all use this value. If you later connect a custom domain, change `siteUrl` to it.
+2. Check the site's address. If it isn't `https://airlinesgrouptravel.staticdomains.app`, update `siteUrl` in `site.config.json`. Canonicals, the sitemap and schema all use this value. If you later connect a custom domain, change `siteUrl` to it.
 3. Copy the site's **PID** from *Site → Settings → General*.
 4. Create an **API key** from *Account → API Keys*. It starts with `sk_`. API deploys require a paid static.app plan.
 5. In this GitHub repo, go to *Settings → Secrets and variables → Actions*:
