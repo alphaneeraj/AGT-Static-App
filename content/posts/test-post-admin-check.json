@@ -1,0 +1,11 @@
+{
+  "title": "Test Post – Admin Publishing Check",
+  "slug": "test-post-admin-check",
+  "status": "published",
+  "date": "2026-09-30T08:56:45.000Z",
+  "updated": "2026-09-30T08:56:45.000Z",
+  "tags": ["Test"],
+  "metaDescription": "Temporary post used to verify admin publishing, sitemap and deploy. Will be deleted.",
+  "content": "<h2>Heading one</h2><p>This is a <strong>test</strong> paragraph with a <a href=\"/contact/\">link</a>.</p><h2>Heading two</h2><ul><li>Item A</li><li>Item B</li></ul><h2>Heading three</h2><p>Call +1-888-609-1015.</p>",
+  "created": "2026-09-30T08:56:45.000Z"
+}
