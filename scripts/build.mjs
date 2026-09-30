@@ -112,7 +112,7 @@ const nav = [
   ['Group Travel', '/group-travel/'],
   ['Business Class', '/business-class/'],
   ['Private Jet', '/private-jet-charter/'],
-  ['Airlines', '/airlines/'],
+  ['Group Types', '/groups/'],
   ['Deals', '/deals/'],
   ['Blog', '/blog/'],
   ['Contact', '/contact/'],
@@ -207,7 +207,7 @@ function footer() {
 </ul>
 </div>
 <div><h3>Services</h3><ul>${C.services.map(s => `<li><a href="/${s.slug}/">${s.title}</a></li>`).join('')}<li><a href="/groups/">Group Types</a></li></ul></div>
-<div><h3>Airlines</h3><ul>${C.airlines.slice(0, 6).map(x => `<li><a href="/airlines/${x.slug}-group-booking/">${x.name} Groups</a></li>`).join('')}<li><a href="/airlines/">All airlines</a></li></ul></div>
+<div><h3>Group Types</h3><ul>${C.groupTypes.map(g => `<li><a href="/groups/${g.slug}/">${g.name}</a></li>`).join('')}</ul></div>
 <div><h3>Company</h3><ul><li><a href="/about/">About Us</a></li><li><a href="/blog/">Travel Blog</a></li><li><a href="/faq/">FAQ</a></li><li><a href="/contact/">Contact</a></li><li><a href="/sitemap/">Sitemap</a></li><li><a href="/privacy-policy/">Privacy Policy</a></li><li><a href="/terms/">Terms</a></li></ul></div>
 </div>
 <div class="wrap legal"><p>Airlines Group Travel is an independent travel agency and is not affiliated with, endorsed by or sponsored by any airline. All airline names and trademarks belong to their respective owners. Fares are subject to availability and may change without notice.</p>
@@ -393,7 +393,7 @@ ${C.groupTypes.map(g => `<a class="card" href="/groups/${g.slug}/"><h3>${g.name}
 <section class="section"><div class="wrap">
 <h2 class="section-title">Airlines we book for groups</h2>
 <ul class="chips">
-${C.airlines.map(a => `<li><a href="/airlines/${a.slug}-group-booking/">${a.name}</a></li>`).join('')}
+${C.airlines.map(a => `<li><span>${a.name}</span></li>`).join('')}
 ${C.moreAirlines.map(a => `<li><span>${a}</span></li>`).join('')}
 <li><span>+ 120 more</span></li></ul>
 </div></section>
@@ -448,63 +448,6 @@ ${quoteForm('quote', 'Send us your trip details')}
   addLlm(d.legal ? 'Optional' : d.serviceType ? 'Services' : 'Company', d.title, url, d.description,
     (d.body || '') + (d.faqs ? d.faqs.map(([q, a]) => `<h3>${q}</h3><p>${a}</p>`).join('') : '') +
     (slug === 'contact' ? `<p>Phone: ${cfg.phone} (24/7). Email: ${cfg.email}. Address: ${cfg.address.street}, ${cfg.address.city}, ${cfg.address.region} ${cfg.address.postalCode}, USA.</p>` : ''));
-}
-
-// Airlines hub + pages
-{
-  const url = '/airlines/';
-  const crumbs = [home, { name: 'Airlines', url }];
-  const p = {
-    path: url, metaTitle: 'Airline Group Booking | Group Fares on 150+ Airlines', crumbs, dateModified: PAGES_UPDATED,
-    description: `Group bookings on American, Delta, United, Southwest, Emirates, Qatar Airways, Lufthansa and 150+ airlines. Call ${cfg.phone} for group fares.`,
-    schema: { '@type': 'ItemList', itemListElement: C.airlines.map((a, i) => ({ '@type': 'ListItem', position: i + 1, url: abs(`/airlines/${a.slug}-group-booking/`), name: `${a.name} group booking` })) },
-  };
-  const body = `${pageHero('Airline Group Booking', 'Group fares for 10+ passengers on major US and international airlines.')}
-<section class="section"><div class="wrap"><div class="cards cards-3">
-${C.airlines.map(a => `<a class="card" href="/airlines/${a.slug}-group-booking/"><h2 class="h3">${a.name} Group Booking</h2><p>${a.alliance === 'no alliance' ? 'Independent carrier' : a.alliance + ' member'} · Hubs: ${a.hubs.slice(0, 2).join(', ')}</p><span class="more">Group fares →</span></a>`).join('\n')}
-</div>
-<h2 class="mt">More airlines we book</h2><ul class="chips">${C.moreAirlines.map(a => `<li><span>${a}</span></li>`).join('')}</ul>
-<p class="muted small mt">Airlines Group Travel is an independent agency and is not affiliated with the airlines listed.</p>
-</div></section>`;
-  write('airlines/index.html', page(p, body));
-  addUrl(url, PAGES_UPDATED, 0.8);
-
-  for (const a of C.airlines) {
-    const aurl = `/airlines/${a.slug}-group-booking/`;
-    const title = `${a.name} Group Booking`;
-    const faqs = [
-      [`How many passengers do I need for a ${a.name} group booking?`, `Airlines generally treat 10 or more passengers on the same itinerary as a group. Call ${cfg.phone} and we will confirm the current ${a.name} group requirements for your route.`],
-      [`Can I hold ${a.name} group seats with a deposit?`, `Group contracts usually allow seats to be held with a deposit and final names to be submitted closer to departure. Deposit amounts and deadlines depend on the route and date and will be shown in your quote.`],
-      [`Is Airlines Group Travel part of ${a.name}?`, `No. We are an independent travel agency that books group travel on ${a.name} and 150+ other airlines. We are not affiliated with ${a.name}.`],
-    ];
-    const html = `
-<h2>Book ${esc(a.name)} flights for your group</h2>
-<p>Traveling with 10 or more people? Airlines Group Travel requests group fares for ${esc(a.name)} flights on your behalf, compares them with other carriers and manages the booking from deposit to departure.</p>
-<h2>${esc(a.name)} network and hubs</h2>
-<p>${esc(a.name)} (${a.code}) ${a.alliance === 'no alliance' ? 'is not part of a global airline alliance' : `is a member of ${a.alliance}`}. Its main ${a.hubs.length > 1 ? 'hubs include' : 'hub is'} ${a.hubs.map(esc).join(', ')}, which makes it a strong choice for ${a.region === 'US' ? 'domestic group trips and connections across the Americas' : 'long-haul international group travel with one connection'}.</p>
-<h2>Why book ${esc(a.name)} group travel with us</h2>
-<ul>
-<li>We compare ${esc(a.name)} group pricing with alternative airlines on the same route.</li>
-<li>One agent manages seats, names, special meals and assistance requests.</li>
-<li>Deposits hold the seats while you collect payments from travelers.</li>
-<li>24/7 help with schedule changes, delays and rebooking at <a href="tel:${cfg.phoneHref}">${cfg.phone}</a>.</li>
-</ul>
-<h2>Groups we book on ${esc(a.name)}</h2>
-<p>Corporate teams, conferences, sports teams, weddings, school trips, church and mission groups and family reunions${a.region === 'US' ? '' : ', including business class groups on long-haul routes'}.</p>
-<p class="muted small">Airline names are trademarks of their respective owners. Airlines Group Travel is an independent travel agency and is not affiliated with ${esc(a.name)}.</p>`;
-    const pp = {
-      path: aurl, metaTitle: `${a.name} Group Booking | Group Flights 10+ Passengers`, dateModified: PAGES_UPDATED,
-      description: `Book ${a.name} group flights for 10+ travelers with deposits and flexible names. Independent agency, 24/7 support. Call ${cfg.phone}.`,
-      crumbs: [home, { name: 'Airlines', url }, { name: title, url: aurl }],
-      schema: [{ '@type': 'Service', name: title, serviceType: 'Group airline ticket booking', provider: { '@id': ORG_ID }, areaServed: 'Worldwide', url: abs(aurl) }, faqSchema(faqs)],
-    };
-    const b = `${pageHero(title, `Group fares, deposits and flexible names for ${a.name} flights – booked by independent group travel specialists.`, '<a class="btn btn-ghost" href="#quote">Request a quote</a>')}
-<section class="section"><div class="wrap content-grid"><article class="prose">${html}</article><aside>${quoteForm('quote', `${a.name} group quote`)}</aside></div></section>
-${faqBlock(faqs)}`;
-    write(`airlines/${a.slug}-group-booking/index.html`, page(pp, b));
-    addUrl(aurl, PAGES_UPDATED, 0.7);
-    addLlm('Airlines', title, aurl, pp.description, html + faqs.map(([q, x]) => `<h3>${q}</h3><p>${x}</p>`).join(''));
-  }
 }
 
 // Group types hub + pages
@@ -620,7 +563,7 @@ ${related.length ? `<section class="section alt"><div class="wrap"><h2 class="se
   for (const l of llms) (groups[l.section] ||= []).push(l);
   const p = { path: url, metaTitle: 'Sitemap', description: `All pages on the ${cfg.name} website.`, crumbs: [home, { name: 'Sitemap', url }] };
   const body = `<section class="section"><div class="wrap narrow prose"><h1>Sitemap</h1>
-<ul><li><a href="/">Home</a></li><li><a href="/blog/">Blog</a></li><li><a href="/airlines/">Airlines</a></li><li><a href="/groups/">Group Types</a></li></ul>
+<ul><li><a href="/">Home</a></li><li><a href="/blog/">Blog</a></li><li><a href="/groups/">Group Types</a></li></ul>
 ${Object.entries(groups).filter(([k]) => k !== 'Main').map(([k, arr]) => `<h2>${k}</h2><ul>${arr.map(l => `<li><a href="${l.url.replace(SITE, '')}">${esc(l.title)}</a></li>`).join('')}</ul>`).join('\n')}
 </div></section>`;
   write('sitemap/index.html', page(p, body));
@@ -687,7 +630,7 @@ function toMd(html) {
     .replace(/[ \t]+/g, ' ').replace(/\n /g, '\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
-const sections = ['Services', 'Group types', 'Airlines', 'Company', 'Blog', 'Optional'];
+const sections = ['Services', 'Group types', 'Company', 'Blog', 'Optional'];
 const contactLine = `Phone (24/7): ${cfg.phone} · Email: ${cfg.email} · Address: ${cfg.address.street}, ${cfg.address.city}, ${cfg.address.region} ${cfg.address.postalCode}, USA`;
 write('llms.txt', `# ${cfg.name}
 
