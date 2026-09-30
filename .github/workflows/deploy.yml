@@ -1,0 +1,56 @@
+name: Build & deploy to static.app
+
+on:
+  push:
+    branches: [main]
+  # Daily rebuild publishes scheduled posts and refreshes sitemap lastmod dates.
+  schedule:
+    - cron: '0 6 * * *'
+  # "Rebuild & deploy now" button in /admin/
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    env:
+      STATIC_APP_API_KEY: ${{ secrets.STATIC_APP_API_KEY }}
+      STATIC_APP_PID: ${{ vars.STATIC_APP_PID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build site (pages, blog, sitemap, llms.txt, RSS)
+        run: node scripts/build.mjs
+
+      - name: Keep a downloadable copy of the build
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-dist
+          path: dist
+          retention-days: 14
+
+      - name: Deploy to static.app
+        if: ${{ env.STATIC_APP_API_KEY != '' && env.STATIC_APP_PID != '' }}
+        uses: designmodo/static-app-deploy-action@v1.0.0
+        with:
+          api-key: ${{ secrets.STATIC_APP_API_KEY }}
+          pid: ${{ env.STATIC_APP_PID }}
+          build-dir: dist
+          # dist has no package.json – nothing to install. Keep .md out, but ship .txt/.xml.
+          install-command: 'true'
+          exclude: '.DS_Store'
+
+      - name: Deployment skipped
+        if: ${{ env.STATIC_APP_API_KEY == '' || env.STATIC_APP_PID == '' }}
+        run: |
+          echo "::warning::Not deployed. Add repository secret STATIC_APP_API_KEY and repository variable STATIC_APP_PID (see README). The built site is attached to this run as 'site-dist'."

@@ -1,0 +1,37 @@
+{
+  "siteUrl": "https://airlinesgrouptravel.static.app",
+  "name": "Airlines Group Travel",
+  "shortName": "AGT",
+  "tagline": "Group Flights, Business Class & Private Jet Charters",
+  "description": "Airlines Group Travel books discounted group flights for 10+ passengers, business class fares and private jet charters on 150+ airlines. Call +1-888-609-1015 24/7 for a free group quote.",
+  "mainSite": "https://www.airlinesgrouptravel.com",
+  "phone": "+1-888-609-1015",
+  "phoneHref": "+18886091015",
+  "email": "info@airlinesgrouptravel.com",
+  "address": {
+    "street": "8 The Green, Suite A",
+    "city": "Dover",
+    "region": "DE",
+    "postalCode": "19901",
+    "country": "US"
+  },
+  "foundingYear": "2022",
+  "twitter": "",
+  "social": [],
+  "locale": "en_US",
+  "themeColor": "#0b3d91",
+  "pagesUpdated": "2026-09-30",
+  "gaId": "",
+  "googleSiteVerification": "",
+  "bingSiteVerification": "",
+  "github": {
+    "owner": "alphaneeraj",
+    "repo": "AGT-Static-App",
+    "branch": "main"
+  },
+  "supabase": {
+    "url": "",
+    "anonKey": ""
+  },
+  "postsPerPage": 9
+}
