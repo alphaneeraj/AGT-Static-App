@@ -5,16 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow, noarchive">
 <title>Admin · Airlines Group Travel</title>
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css">
-<link rel="stylesheet" href="/admin/admin.css">
+<link rel="stylesheet" href="admin.css">
 </head>
 <body>
 
 <!-- Login -->
 <section id="login" class="login" hidden>
   <form id="login-form" class="login-card">
-    <img src="/favicon.svg" width="48" height="48" alt="">
+    <img src="favicon.svg" width="48" height="48" alt="">
     <h1>AGT Admin</h1>
     <p class="muted">Blog publishing &amp; lead management</p>
     <div id="login-supabase">
@@ -36,7 +36,7 @@
 <!-- App -->
 <div id="app" class="app" hidden>
   <aside class="side">
-    <a class="logo" href="/" target="_blank" rel="noopener"><img src="/favicon.svg" width="28" height="28" alt=""> AGT Admin</a>
+    <a class="logo" id="lnk-logo" href="#" target="_blank" rel="noopener"><img src="favicon.svg" width="28" height="28" alt=""> AGT Admin</a>
     <nav>
       <a href="#/dashboard" data-tab="dashboard">Dashboard</a>
       <a href="#/posts" data-tab="posts">Blog posts</a>
@@ -184,9 +184,9 @@
 </div>
 
 <input type="file" id="file-input" accept="image/*" hidden>
-<script src="/assets/js/config.js"></script>
+<script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/admin/admin.js"></script>
+<script src="admin.js"></script>
 </body>
 </html>

@@ -8,6 +8,11 @@
   'use strict';
 
   var CFG = window.AGT_CONFIG || {};
+  // The admin runs on GitHub Pages (static.app's CSP blocks calls to GitHub),
+  // so site-relative /uploads/ paths are shown via the live site URL.
+  var SITE = (CFG.siteUrl || '').replace(/\/$/, '');
+  var toAbs = function (html) { return String(html || '').replace(/(src=["'])\/uploads\//g, '$1' + SITE + '/uploads/'); };
+  var toRel = function (html) { return String(html || '').split(SITE + '/uploads/').join('/uploads/'); };
   var GH = CFG.github || {};
   var POSTS_DIR = 'content/posts';
   var UPLOAD_DIR = 'static/uploads';
@@ -164,7 +169,8 @@
     $('#app').hidden = false;
     $('#who').textContent = state.user ? state.user.email : 'GitHub token';
     $('#admins-panel').hidden = !hasSupabase;
-    var site = CFG.siteUrl || location.origin;
+    var site = SITE || location.origin;
+    $('#lnk-logo').href = site + '/';
     $('#lnk-site').href = site + '/';
     $('#lnk-blog').href = site + '/blog/';
     $('#lnk-sitemap').href = site + '/sitemap.xml';
@@ -339,7 +345,7 @@
   function setCoverPreview(src) {
     var box = $('#cover-preview');
     box.innerHTML = '';
-    if (src) box.appendChild(el('img', { src: src, alt: '' }));
+    if (src) box.appendChild(el('img', { src: src.indexOf('/uploads/') === 0 ? SITE + src : src, alt: '' }));
   }
 
   function openEditor(slug) {
@@ -378,7 +384,7 @@
       f.excerpt.value = d.excerpt || '';
       setCoverPreview(d.cover || '');
       quill.setContents([]);
-      if (d.content) quill.clipboard.dangerouslyPasteHTML(0, d.content, 'silent');
+      if (d.content) quill.clipboard.dangerouslyPasteHTML(0, toAbs(d.content), 'silent');
       $('#btn-delete').hidden = !p;
       var live = $('#btn-view-live');
       live.hidden = !(p && d.status === 'published');
@@ -496,6 +502,7 @@
 
   function normaliseHtml(html) {
     Object.keys(state.blobMap).forEach(function (b) { html = html.split(b).join(state.blobMap[b]); });
+    html = toRel(html);
     // YouTube watch/short links → embeddable URLs
     html = html.replace(/https:\/\/(?:www\.)?youtube\.com\/watch\?v=([\w-]+)[^"]*/g, 'https://www.youtube-nocookie.com/embed/$1')
       .replace(/https:\/\/youtu\.be\/([\w-]+)[^"]*/g, 'https://www.youtube-nocookie.com/embed/$1');

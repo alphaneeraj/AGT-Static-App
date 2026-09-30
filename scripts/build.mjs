@@ -11,6 +11,9 @@ import * as C from './content.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = path.join(ROOT, 'dist');
+// The admin portal is published to GitHub Pages from dist-admin/, because
+// static.app's CSP (connect-src) blocks browser calls to api.github.com.
+const DIST_ADMIN = path.join(ROOT, 'dist-admin');
 const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'site.config.json'), 'utf8'));
 const SITE = cfg.siteUrl.replace(/\/$/, '');
 const NOW = new Date();
@@ -317,8 +320,10 @@ function loadPosts() {
 
 // ---------- build ----------
 fs.rmSync(DIST, { recursive: true, force: true });
+fs.rmSync(DIST_ADMIN, { recursive: true, force: true });
 fs.mkdirSync(DIST, { recursive: true });
 copyDir(path.join(ROOT, 'src'), DIST);
+fs.rmSync(path.join(DIST, 'admin'), { recursive: true, force: true });
 copyDir(path.join(ROOT, 'static'), DIST);
 
 const posts = loadPosts();
@@ -746,10 +751,23 @@ write('humans.txt', `/* TEAM */\n${cfg.name}\nContact: ${cfg.email}\nPhone: ${cf
 write('.well-known/security.txt', `Contact: mailto:${cfg.email}\nExpires: ${new Date(NOW.getTime() + 365 * 864e5).toISOString()}\nPreferred-Languages: en\nCanonical: ${SITE}/.well-known/security.txt\n`);
 
 // Public runtime config for forms + admin (the Supabase anon key is public by design).
-write('assets/js/config.js', `window.AGT_CONFIG=${JSON.stringify({
-  siteUrl: SITE, phone: cfg.phone, email: cfg.email,
+const runtimeConfig = `window.AGT_CONFIG=${JSON.stringify({
+  siteUrl: SITE, adminUrl: cfg.adminUrl || '', phone: cfg.phone, email: cfg.email,
   supabaseUrl: cfg.supabase?.url || '', supabaseAnonKey: cfg.supabase?.anonKey || '',
   github: cfg.github, builtAt: BUILD_DATE,
-})};\n`);
+})};\n`;
+write('assets/js/config.js', runtimeConfig);
+
+// Admin portal → dist-admin/admin/ (GitHub Pages); /admin/ on the site redirects there.
+copyDir(path.join(ROOT, 'src', 'admin'), path.join(DIST_ADMIN, 'admin'));
+fs.writeFileSync(path.join(DIST_ADMIN, 'admin', 'config.js'), runtimeConfig);
+fs.copyFileSync(path.join(ROOT, 'static', 'favicon.svg'), path.join(DIST_ADMIN, 'admin', 'favicon.svg'));
+fs.writeFileSync(path.join(DIST_ADMIN, 'index.html'), '<!doctype html><meta name="robots" content="noindex"><meta http-equiv="refresh" content="0;url=admin/"><a href="admin/">Admin</a>\n');
+fs.writeFileSync(path.join(DIST_ADMIN, '.nojekyll'), '');
+if (cfg.adminUrl) {
+  write('admin/index.html', `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow">
+<title>Admin</title><meta http-equiv="refresh" content="0;url=${esc(cfg.adminUrl)}"></head>
+<body><p>Redirecting to the <a href="${esc(cfg.adminUrl)}">admin portal</a>…</p></body></html>\n`);
+}
 
 console.log(`✓ Built ${sitemap.length} indexable URLs, ${posts.length} blog posts → dist/`);

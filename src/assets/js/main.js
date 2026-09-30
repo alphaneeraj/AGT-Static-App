@@ -64,25 +64,40 @@
 
       submit.disabled = true;
       setStatus(status, 'Sending…');
-      fetch(cfg.supabaseUrl.replace(/\/$/, '') + '/rest/v1/leads', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: cfg.supabaseAnonKey,
-          Authorization: 'Bearer ' + cfg.supabaseAnonKey,
-          Prefer: 'return=minimal'
-        },
-        body: JSON.stringify(lead)
-      }).then(function (r) {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        if (window.gtag) window.gtag('event', 'generate_lead', { value: lead.passengers });
-        done();
-      }).catch(function () {
-        submit.disabled = false;
-        setStatus(status, 'Sorry, we could not send your request. Please call ' + (cfg.phone || '') + ' – we are available 24/7.', 'err');
-      });
+      if (window.gtag) window.gtag('event', 'generate_lead', { value: lead.passengers });
+      postLead(lead, done);
     });
   });
+
+  // static.app's CSP only allows fetch() to static.app, so the lead is sent as a
+  // regular form POST (not restricted by connect-src) into a hidden iframe.
+  // PostgREST accepts url-encoded inserts; the anon key goes in ?apikey=.
+  function postLead(lead, cb) {
+    var name = 'lead-sink-' + Date.now();
+    var frame = document.createElement('iframe');
+    frame.name = name;
+    frame.hidden = true;
+    frame.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(frame);
+    var f = document.createElement('form');
+    f.method = 'POST';
+    f.target = name;
+    f.enctype = 'application/x-www-form-urlencoded';
+    f.action = cfg.supabaseUrl.replace(/\/$/, '') + '/rest/v1/leads?apikey=' + encodeURIComponent(cfg.supabaseAnonKey);
+    Object.keys(lead).forEach(function (k) {
+      if (lead[k] == null || lead[k] === '') return; // empty dates/ints would fail to cast
+      var i = document.createElement('input');
+      i.type = 'hidden'; i.name = k; i.value = String(lead[k]);
+      f.appendChild(i);
+    });
+    f.hidden = true;
+    document.body.appendChild(f);
+    var finished = false;
+    var finish = function () { if (!finished) { finished = true; cb(); } };
+    frame.addEventListener('load', finish);
+    setTimeout(finish, 6000);
+    f.submit();
+  }
 
   function setStatus(el, msg, cls) {
     if (!el) return;
