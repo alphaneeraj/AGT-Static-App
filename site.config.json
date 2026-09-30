@@ -31,8 +31,8 @@
     "branch": "main"
   },
   "supabase": {
-    "url": "",
-    "anonKey": ""
+    "url": "https://yzyuaridfoljlsthbkxt.supabase.co",
+    "anonKey": "sb_publishable_arrEPMGSDzuOysEef4rsFQ_pCbTNMkY"
   },
   "postsPerPage": 9
 }
