@@ -18,6 +18,8 @@ const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'site.config.json'), 'utf
 const SITE = cfg.siteUrl.replace(/\/$/, '');
 const NOW = new Date();
 const BUILD_DATE = NOW.toISOString();
+// Cache-buster for CSS/JS: static.app's CDN caches assets for hours.
+const ASSET_V = NOW.getTime().toString(36);
 const PAGES_UPDATED = cfg.pagesUpdated || BUILD_DATE.slice(0, 10);
 const useSupabase = Boolean(cfg.supabase?.url && cfg.supabase?.anonKey);
 
@@ -165,7 +167,7 @@ ${cfg.twitter ? `<meta name="twitter:site" content="${esc(cfg.twitter)}">\n` : '
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
 <link rel="alternate" type="application/rss+xml" title="${esc(cfg.name)} Blog" href="/feed.xml">
-<link rel="stylesheet" href="/assets/css/style.css?v=${BUILD_DATE.slice(0, 10).replace(/-/g, '')}">
+<link rel="stylesheet" href="/assets/css/style.css?v=${ASSET_V}">
 ${p.prev ? `<link rel="prev" href="${abs(p.prev)}">\n` : ''}${p.next ? `<link rel="next" href="${abs(p.next)}">\n` : ''}${ld({ '@context': 'https://schema.org', '@graph': graph })}
 ${cfg.gaId ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${esc(cfg.gaId)}"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${esc(cfg.gaId)}');</script>
@@ -216,8 +218,8 @@ ${airlinePages.length
 <p>© ${NOW.getUTCFullYear()} ${esc(cfg.name)}. All rights reserved. Main website: <a href="${cfg.mainSite}" rel="noopener">${cfg.mainSite.replace(/^https?:\/\//, '')}</a></p></div>
 </footer>
 <a class="call-float" href="tel:${cfg.phoneHref}" aria-label="Call ${cfg.phone}">${icon('phone')}<span>Call ${cfg.phone}</span></a>
-<script src="/assets/js/config.js" defer></script>
-<script src="/assets/js/main.js" defer></script>`;
+<script src="/assets/js/config.js?v=${ASSET_V}" defer></script>
+<script src="/assets/js/main.js?v=${ASSET_V}" defer></script>`;
 }
 
 function page(p, bodyHtml) {
