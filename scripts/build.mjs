@@ -108,7 +108,7 @@ function faqSchema(faqs) {
 }
 
 // ---------- layout ----------
-const nav = [
+let nav = [
   ['Group Travel', '/group-travel/'],
   ['Business Class', '/business-class/'],
   ['Private Jet', '/private-jet-charter/'],
@@ -207,7 +207,9 @@ function footer() {
 </ul>
 </div>
 <div><h3>Services</h3><ul>${C.services.map(s => `<li><a href="/${s.slug}/">${s.title}</a></li>`).join('')}<li><a href="/groups/">Group Types</a></li></ul></div>
-<div><h3>Group Types</h3><ul>${C.groupTypes.map(g => `<li><a href="/groups/${g.slug}/">${g.name}</a></li>`).join('')}</ul></div>
+${airlinePages.length
+  ? `<div><h3>Airlines</h3><ul>${airlinePages.slice(0, 6).map(a => `<li><a href="${a.url}">${esc(a.title)}</a></li>`).join('')}<li><a href="/airlines/">All airlines</a></li></ul></div>`
+  : `<div><h3>Group Types</h3><ul>${C.groupTypes.map(g => `<li><a href="/groups/${g.slug}/">${g.name}</a></li>`).join('')}</ul></div>`}
 <div><h3>Company</h3><ul><li><a href="/about/">About Us</a></li><li><a href="/blog/">Travel Blog</a></li><li><a href="/faq/">FAQ</a></li><li><a href="/contact/">Contact</a></li><li><a href="/sitemap/">Sitemap</a></li><li><a href="/privacy-policy/">Privacy Policy</a></li><li><a href="/terms/">Terms</a></li></ul></div>
 </div>
 <div class="wrap legal"><p>Airlines Group Travel is an independent travel agency and is not affiliated with, endorsed by or sponsored by any airline. All airline names and trademarks belong to their respective owners. Fares are subject to availability and may change without notice.</p>
@@ -279,8 +281,8 @@ function pageHero(title, lead, extra = '') {
 }
 
 // ---------- blog data ----------
-function loadPosts() {
-  const dir = path.join(ROOT, 'content', 'posts');
+function loadPosts(folder = 'posts', base = '/blog/') {
+  const dir = path.join(ROOT, 'content', folder);
   if (!fs.existsSync(dir)) return [];
   const posts = [];
   for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.json'))) {
@@ -304,7 +306,7 @@ function loadPosts() {
     const text = decode(stripTags(content));
     posts.push({
       ...p, slug, content, toc,
-      url: `/blog/${slug}/`,
+      url: `${base}${slug}/`,
       date: date.toISOString(),
       updated: new Date(p.updated || p.date || NOW).toISOString(),
       excerpt: p.excerpt || truncate(text, 160),
@@ -327,8 +329,11 @@ fs.rmSync(path.join(DIST, 'admin'), { recursive: true, force: true });
 copyDir(path.join(ROOT, 'static'), DIST);
 
 const posts = loadPosts();
+// Airline pages are authored in the admin (content/airlines) like blog posts.
+const airlinePages = loadPosts('airlines', '/airlines/').sort((a, b) => a.title.localeCompare(b.title));
+if (airlinePages.length) nav.splice(3, 0, ['Airlines', '/airlines/']);
 // Home/sitemap change when content changes, not on every daily rebuild.
-const SITE_UPDATED = [PAGES_UPDATED, ...posts.map(p => p.updated.slice(0, 10))].sort().at(-1);
+const SITE_UPDATED = [PAGES_UPDATED, ...posts.map(p => p.updated.slice(0, 10)), ...airlinePages.map(p => p.updated.slice(0, 10))].sort().at(-1);
 const sitemap = []; // {loc, lastmod, priority, changefreq}
 const llms = [];    // {section, title, url, desc, text}
 const addUrl = (loc, lastmod, priority = 0.7, changefreq = 'monthly') => sitemap.push({ loc: abs(loc), lastmod, priority, changefreq });
@@ -393,6 +398,7 @@ ${C.groupTypes.map(g => `<a class="card" href="/groups/${g.slug}/"><h3>${g.name}
 <section class="section"><div class="wrap">
 <h2 class="section-title">Airlines we book for groups</h2>
 <ul class="chips">
+${airlinePages.map(a => `<li><a href="${a.url}">${esc(a.title)}</a></li>`).join('')}
 ${C.airlines.map(a => `<li><span>${a.name}</span></li>`).join('')}
 ${C.moreAirlines.map(a => `<li><span>${a}</span></li>`).join('')}
 <li><span>+ 120 more</span></li></ul>
@@ -448,6 +454,44 @@ ${quoteForm('quote', 'Send us your trip details')}
   addLlm(d.legal ? 'Optional' : d.serviceType ? 'Services' : 'Company', d.title, url, d.description,
     (d.body || '') + (d.faqs ? d.faqs.map(([q, a]) => `<h3>${q}</h3><p>${a}</p>`).join('') : '') +
     (slug === 'contact' ? `<p>Phone: ${cfg.phone} (24/7). Email: ${cfg.email}. Address: ${cfg.address.street}, ${cfg.address.city}, ${cfg.address.region} ${cfg.address.postalCode}, USA.</p>` : ''));
+}
+
+// Airline pages (from the admin) + hub
+if (airlinePages.length) {
+  const hub = '/airlines/';
+  const p = {
+    path: hub, metaTitle: 'Airline Group Booking | Group Fares on 150+ Airlines', crumbs: [home, { name: 'Airlines', url: hub }],
+    dateModified: airlinePages.map(a => a.updated).sort().at(-1),
+    description: `Group bookings and fares on major US and international airlines. Independent agency, 24/7 support. Call ${cfg.phone}.`,
+    schema: { '@type': 'ItemList', itemListElement: airlinePages.map((a, i) => ({ '@type': 'ListItem', position: i + 1, url: abs(a.url), name: a.title })) },
+  };
+  const body = `${pageHero('Airline Group Booking', 'Group fares for 10+ passengers on major US and international airlines.')}
+<section class="section"><div class="wrap"><div class="cards cards-3">
+${airlinePages.map(a => `<a class="card" href="${a.url}"><h2 class="h3">${esc(a.title)}</h2><p>${esc(a.excerpt)}</p><span class="more">Group fares →</span></a>`).join('\n')}
+</div>
+<p class="muted small mt">Airlines Group Travel is an independent agency and is not affiliated with the airlines listed.</p>
+</div></section>`;
+  write('airlines/index.html', page(p, body));
+  addUrl(hub, p.dateModified.slice(0, 10), 0.8);
+
+  for (const a of airlinePages) {
+    const pp = {
+      path: a.url, metaTitle: a.metaTitle || a.title, ogTitle: a.title, description: a.description,
+      image: a.cover || null, imageAlt: a.coverAlt || a.title, dateModified: a.updated,
+      crumbs: [home, { name: 'Airlines', url: hub }, { name: truncate(a.title, 60), url: a.url }],
+      schema: { '@type': 'Service', '@id': abs(a.url) + '#service', name: a.title, serviceType: 'Group airline ticket booking', description: a.description, provider: { '@id': ORG_ID }, areaServed: 'Worldwide', url: abs(a.url) },
+    };
+    const b = `${pageHero(a.title, a.excerpt, '<a class="btn btn-ghost" href="#quote">Request a quote</a>')}
+${a.cover ? `<div class="wrap"><img class="page-cover" src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}" width="1200" height="630" fetchpriority="high"></div>` : ''}
+<section class="section"><div class="wrap content-grid">
+<article class="prose">${a.toc.length >= 3 ? `<nav class="toc" aria-label="On this page"><strong>On this page</strong><ol>${a.toc.map(t => `<li><a href="#${t.id}">${esc(t.text)}</a></li>`).join('')}</ol></nav>` : ''}${a.content}
+<p class="muted small">Airline names are trademarks of their respective owners. Airlines Group Travel is an independent travel agency and is not affiliated with any airline.</p></article>
+<aside>${quoteForm('quote', `${esc(a.title)} quote`)}</aside>
+</div></section>`;
+    write(`${a.url.slice(1)}index.html`, page(pp, b));
+    addUrl(a.url, a.updated.slice(0, 10), 0.7);
+    addLlm('Airlines', a.title, a.url, a.description, a.content);
+  }
 }
 
 // Group types hub + pages
@@ -563,7 +607,7 @@ ${related.length ? `<section class="section alt"><div class="wrap"><h2 class="se
   for (const l of llms) (groups[l.section] ||= []).push(l);
   const p = { path: url, metaTitle: 'Sitemap', description: `All pages on the ${cfg.name} website.`, crumbs: [home, { name: 'Sitemap', url }] };
   const body = `<section class="section"><div class="wrap narrow prose"><h1>Sitemap</h1>
-<ul><li><a href="/">Home</a></li><li><a href="/blog/">Blog</a></li><li><a href="/groups/">Group Types</a></li></ul>
+<ul><li><a href="/">Home</a></li><li><a href="/blog/">Blog</a></li>${airlinePages.length ? '<li><a href="/airlines/">Airlines</a></li>' : ''}<li><a href="/groups/">Group Types</a></li></ul>
 ${Object.entries(groups).filter(([k]) => k !== 'Main').map(([k, arr]) => `<h2>${k}</h2><ul>${arr.map(l => `<li><a href="${l.url.replace(SITE, '')}">${esc(l.title)}</a></li>`).join('')}</ul>`).join('\n')}
 </div></section>`;
   write('sitemap/index.html', page(p, body));
@@ -630,7 +674,7 @@ function toMd(html) {
     .replace(/[ \t]+/g, ' ').replace(/\n /g, '\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
-const sections = ['Services', 'Group types', 'Company', 'Blog', 'Optional'];
+const sections = ['Services', 'Airlines', 'Group types', 'Company', 'Blog', 'Optional'];
 const contactLine = `Phone (24/7): ${cfg.phone} · Email: ${cfg.email} · Address: ${cfg.address.street}, ${cfg.address.city}, ${cfg.address.region} ${cfg.address.postalCode}, USA`;
 write('llms.txt', `# ${cfg.name}
 
@@ -713,4 +757,4 @@ if (cfg.adminUrl) {
 <body><p>Redirecting to the <a href="${esc(cfg.adminUrl)}">admin portal</a>…</p></body></html>\n`);
 }
 
-console.log(`✓ Built ${sitemap.length} indexable URLs, ${posts.length} blog posts → dist/`);
+console.log(`✓ Built ${sitemap.length} indexable URLs, ${posts.length} blog posts, ${airlinePages.length} airline pages → dist/`);

@@ -14,13 +14,18 @@
   var toAbs = function (html) { return String(html || '').replace(/(src=["'])\/uploads\//g, '$1' + SITE + '/uploads/'); };
   var toRel = function (html) { return String(html || '').split(SITE + '/uploads/').join('/uploads/'); };
   var GH = CFG.github || {};
-  var POSTS_DIR = 'content/posts';
+  // Content collections: same editor, different folder + URL prefix on the site.
+  var COLS = {
+    posts: { dir: 'content/posts', base: '/blog/', one: 'post', list: 'Blog posts', listHash: '#/posts', editHash: '#/editor' },
+    airlines: { dir: 'content/airlines', base: '/airlines/', one: 'airline page', list: 'Airline pages', listHash: '#/airlines', editHash: '#/airline-editor' }
+  };
+  var col = function () { return COLS[state.col]; };
   var UPLOAD_DIR = 'static/uploads';
   var WORKFLOW = 'deploy.yml';
   var hasSupabase = Boolean(CFG.supabaseUrl && CFG.supabaseAnonKey && window.supabase);
   var sb = hasSupabase ? window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey) : null;
 
-  var state = { token: null, user: null, posts: [], leads: [], current: null, blobMap: {}, htmlMode: false };
+  var state = { col: 'posts', cache: { posts: [], airlines: [] }, token: null, user: null, posts: [], leads: [], current: null, blobMap: {}, htmlMode: false };
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
 
@@ -173,10 +178,11 @@
     $('#lnk-logo').href = site + '/';
     $('#lnk-site').href = site + '/';
     $('#lnk-blog').href = site + '/blog/';
+    $('#lnk-airlines').href = site + '/airlines/';
     $('#lnk-sitemap').href = site + '/sitemap.xml';
     $('#lnk-llms').href = site + '/llms.txt';
     $('#lnk-repo').href = 'https://github.com/' + GH.owner + '/' + GH.repo;
-    $('#set-repo').textContent = GH.owner + '/' + GH.repo + ' (' + POSTS_DIR + ')';
+    $('#set-repo').textContent = GH.owner + '/' + GH.repo + ' (content/posts, content/airlines)';
     $('#token-status').textContent = state.token ? 'A token is saved.' : 'No token saved yet – blog publishing is disabled.';
     initEditor();
     window.addEventListener('hashchange', route);
@@ -187,18 +193,34 @@
   function route() {
     var parts = (location.hash.replace(/^#\/?/, '') || 'dashboard').split('/');
     var tab = parts[0];
-    if (!document.querySelector('[data-view="' + tab + '"]')) tab = 'dashboard';
-    $$('[data-view]').forEach(function (v) { v.hidden = v.getAttribute('data-view') !== tab; });
+    var views = { dashboard: 'dashboard', posts: 'posts', airlines: 'posts', editor: 'editor', 'airline-editor': 'editor', leads: 'leads', settings: 'settings' };
+    if (!views[tab]) tab = 'dashboard';
+    var view = views[tab];
+    if (tab === 'airlines' || tab === 'airline-editor') switchCol('airlines');
+    else if (tab === 'posts' || tab === 'editor') switchCol('posts');
+    $$('[data-view]').forEach(function (v) { v.hidden = v.getAttribute('data-view') !== view; });
     $$('.side nav a').forEach(function (a) { a.classList.toggle('active', a.getAttribute('data-tab') === tab); });
     if (tab === 'dashboard') loadDashboard();
-    if (tab === 'posts') loadPosts();
-    if (tab === 'editor') openEditor(parts[1] ? decodeURIComponent(parts[1]) : null);
+    if (view === 'posts') loadPosts();
+    if (view === 'editor') openEditor(parts[1] ? decodeURIComponent(parts[1]) : null);
     if (tab === 'leads') loadLeads();
-    if (!state.token && (tab === 'posts' || tab === 'editor')) toast('Add a GitHub token in Settings to manage blog posts.', true);
+    if (!state.token && (view === 'posts' || view === 'editor')) toast('Add a GitHub token in Settings to manage content.', true);
+  }
+
+  function switchCol(name) {
+    state.col = name;
+    state.posts = state.cache[name];
+    var c = col();
+    $('#list-title').textContent = c.list;
+    $('#btn-new-item').href = c.editHash;
+    $('#btn-new-item').textContent = '+ New ' + c.one;
+    $('#post-search').placeholder = 'Search ' + c.list.toLowerCase() + '…';
+    $('#slug-prefix').textContent = c.base;
   }
 
   // ---------- dashboard ----------
   function loadDashboard() {
+    switchCol('posts');
     fetchPosts().then(function () {
       var now = Date.now();
       var pub = state.posts.filter(function (p) { return p.data.status === 'published' && new Date(p.data.date) <= now; });
@@ -244,7 +266,8 @@
   // ---------- posts ----------
   function fetchPosts() {
     if (!state.token) return Promise.reject(new Error('No token'));
-    return gh('/contents/' + POSTS_DIR + '?ref=' + GH.branch).catch(function (e) {
+    var name = state.col;
+    return gh('/contents/' + col().dir + '?ref=' + GH.branch).catch(function (e) {
       if (e.status === 404) return [];
       throw e;
     }).then(function (files) {
@@ -259,8 +282,9 @@
         });
       }));
     }).then(function (list) {
-      state.posts = list.sort(function (a, b) { return String(b.data.date || '').localeCompare(String(a.data.date || '')); });
-      return state.posts;
+      state.cache[name] = list.sort(function (a, b) { return String(b.data.date || '').localeCompare(String(a.data.date || '')); });
+      if (state.col === name) state.posts = state.cache[name];
+      return state.cache[name];
     });
   }
 
@@ -279,21 +303,23 @@
     state.posts.filter(function (p) { return !q || (p.data.title || '').toLowerCase().indexOf(q) > -1; }).forEach(function (p) {
       var st = p.data.status === 'published' ? (new Date(p.data.date) > now ? 'scheduled' : 'published') : 'draft';
       tb.appendChild(el('tr', {}, [
-        el('td', {}, [el('a', { href: '#/editor/' + encodeURIComponent(p.slug), text: p.data.title || p.slug }), el('div', { class: 'muted small', text: '/blog/' + p.slug + '/' })]),
+        el('td', {}, [el('a', { href: col().editHash + '/' + encodeURIComponent(p.slug), text: p.data.title || p.slug }), el('div', { class: 'muted small', text: col().base + p.slug + '/' })]),
         el('td', {}, [el('span', { class: 'pill pill-' + st, text: st })]),
         el('td', { text: fmt(p.data.date) }),
         el('td', { class: 'actions' }, [
-          el('a', { class: 'btn small ghost', href: '#/editor/' + encodeURIComponent(p.slug), text: 'Edit' }),
-          st === 'published' ? el('a', { class: 'btn small ghost', href: (CFG.siteUrl || '') + '/blog/' + p.slug + '/', target: '_blank', rel: 'noopener', text: 'View' }) : null
+          el('a', { class: 'btn small ghost', href: col().editHash + '/' + encodeURIComponent(p.slug), text: 'Edit' }),
+          st === 'published' ? el('a', { class: 'btn small ghost', href: SITE + col().base + p.slug + '/', target: '_blank', rel: 'noopener', text: 'View' }) : null
         ])
       ]));
     });
-    if (!tb.children.length) tb.innerHTML = '<tr><td colspan="4" class="muted">No posts yet. Click “New post”.</td></tr>';
+    if (!tb.children.length) tb.innerHTML = '<tr><td colspan="4" class="muted">Nothing here yet. Click “+ New ' + col().one + '”.</td></tr>';
   }
   $('#post-search').addEventListener('input', renderPosts);
-  // "New post" while already on #/editor doesn't fire hashchange – reset manually.
-  $('.side nav a[data-tab="editor"]').addEventListener('click', function () {
-    if (location.hash === '#/editor' && (!state.dirty || confirm('Discard unsaved changes?'))) openEditor(null);
+  // "New …" while already on that editor doesn't fire hashchange – reset manually.
+  $$('.side nav a[data-tab$="editor"], #btn-new-item').forEach(function (a) {
+    a.addEventListener('click', function () {
+      if (location.hash === a.getAttribute('href') && (!state.dirty || confirm('Discard unsaved changes?'))) openEditor(null);
+    });
   });
 
   // ---------- editor ----------
@@ -369,7 +395,7 @@
     load.then(function (p) {
       state.current = p ? { slug: p.slug, sha: p.sha, path: p.path } : null;
       var d = p ? p.data : { status: 'draft', date: new Date().toISOString(), author: '' };
-      $('#editor-title').textContent = p ? 'Edit post' : 'New post';
+      $('#editor-title').textContent = (p ? 'Edit ' : 'New ') + col().one;
       f.title.value = d.title || '';
       f.slug.value = p ? p.slug : '';
       if (p) f.slug.dataset.touched = '1';
@@ -388,7 +414,7 @@
       $('#btn-delete').hidden = !p;
       var live = $('#btn-view-live');
       live.hidden = !(p && d.status === 'published');
-      live.href = (CFG.siteUrl || '') + '/blog/' + (p ? p.slug : '') + '/';
+      live.href = SITE + col().base + (p ? p.slug : '') + '/';
       updateSerp(); updateCounts();
       state.dirty = false;
     }).catch(function (e) { toast(e.message, true); });
@@ -427,7 +453,7 @@
     var desc = f.metaDescription.value || f.excerpt.value || quill.getText().slice(0, 155) || 'Meta description preview…';
     $('#serp-title').textContent = title;
     $('#serp-desc').textContent = desc.length > 160 ? desc.slice(0, 157) + '…' : desc;
-    $('#serp-url').textContent = (CFG.siteUrl || location.origin).replace(/^https?:\/\//, '') + ' › blog › ' + (f.slug.value || 'post-url');
+    $('#serp-url').textContent = (CFG.siteUrl || location.origin).replace(/^https?:\/\//, '') + col().base.replace(/\//g, ' › ').replace(/ › $/, ' › ') + (f.slug.value || 'page-url');
     $$('.counter').forEach(function (c) {
       var n = f[c.getAttribute('data-for')].value.length, max = +c.getAttribute('data-max');
       c.textContent = n + '/' + max;
@@ -521,7 +547,7 @@
 
     var cur = state.current;
     var clash = state.posts.find(function (p) { return p.slug === slug && (!cur || p.slug !== cur.slug); });
-    if (clash) { toast('Another post already uses /blog/' + slug + '/', true); return; }
+    if (clash) { toast('Another ' + col().one + ' already uses ' + col().base + slug + '/', true); return; }
 
     var btns = $$('#btn-save-draft, #btn-publish');
     btns.forEach(function (b) { b.disabled = true; });
@@ -549,7 +575,7 @@
       };
       if (existing && existing.data.created) data.created = existing.data.created; else data.created = now;
       var json = JSON.stringify(data, null, 2) + '\n';
-      var path = POSTS_DIR + '/' + slug + '.json';
+      var path = col().dir + '/' + slug + '.json';
       var renamed = cur && cur.slug !== slug;
       var verb = status === 'published' ? 'Publish' : 'Save draft';
       return ghPut(path, utf8ToB64(json), verb + ': ' + title, renamed ? undefined : (cur && cur.sha)).then(function (res) {
@@ -558,19 +584,20 @@
       }).then(function (res) {
         state.posts = state.posts.filter(function (p) { return !cur || p.slug !== cur.slug; });
         state.posts.unshift({ path: path, sha: res.content.sha, slug: slug, data: data });
+        state.cache[state.col] = state.posts;
         state.current = { slug: slug, sha: res.content.sha, path: path };
         state.dirty = false;
         f.status.value = status;
         $('#btn-delete').hidden = false;
-        $('#editor-title').textContent = 'Edit post';
-        if (location.hash !== '#/editor/' + slug) history.replaceState(null, '', '#/editor/' + slug);
+        $('#editor-title').textContent = 'Edit ' + col().one;
+        if (location.hash !== col().editHash + '/' + slug) history.replaceState(null, '', col().editHash + '/' + slug);
         var scheduled = status === 'published' && new Date(data.date) > new Date();
         toast(status === 'published'
           ? (scheduled ? 'Scheduled – it goes live on ' + fmt(data.date) + ' (daily rebuild).' : 'Published! The site rebuilds in 1–2 minutes.')
           : 'Draft saved.');
         var live = $('#btn-view-live');
         live.hidden = status !== 'published';
-        live.href = (CFG.siteUrl || '') + '/blog/' + slug + '/';
+        live.href = SITE + col().base + slug + '/';
       });
     }).catch(function (e) {
       toast('Save failed: ' + e.message + (e.status === 409 ? ' (post changed elsewhere – reload and retry)' : ''), true);
@@ -583,10 +610,10 @@
     var cur = state.current;
     if (!cur || !confirm('Delete this post permanently? It will be removed from the site on the next rebuild.')) return;
     ghDelete(cur.path, cur.sha, 'Delete post ' + cur.slug).then(function () {
-      state.posts = state.posts.filter(function (p) { return p.slug !== cur.slug; });
+      state.posts = state.cache[state.col] = state.posts.filter(function (p) { return p.slug !== cur.slug; });
       state.dirty = false;
       toast('Post deleted.');
-      location.hash = '#/posts';
+      location.hash = col().listHash;
     }).catch(function (e) { toast(e.message, true); });
   }
 

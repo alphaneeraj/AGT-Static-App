@@ -41,6 +41,8 @@
       <a href="#/dashboard" data-tab="dashboard">Dashboard</a>
       <a href="#/posts" data-tab="posts">Blog posts</a>
       <a href="#/editor" data-tab="editor">New post</a>
+      <a href="#/airlines" data-tab="airlines">Airline pages</a>
+      <a href="#/airline-editor" data-tab="airline-editor">New airline page</a>
       <a href="#/leads" data-tab="leads">Leads <span id="new-leads-badge" class="badge" hidden></span></a>
       <a href="#/settings" data-tab="settings">Settings</a>
     </nav>
@@ -69,15 +71,15 @@
       </div>
       <div class="panel">
         <h2>Quick links</h2>
-        <p class="links"><a id="lnk-site" target="_blank" rel="noopener">Live site</a> · <a id="lnk-blog" target="_blank" rel="noopener">Blog</a> · <a id="lnk-sitemap" target="_blank" rel="noopener">sitemap.xml</a> · <a id="lnk-llms" target="_blank" rel="noopener">llms.txt</a> · <a id="lnk-repo" target="_blank" rel="noopener">GitHub repo</a></p>
+        <p class="links"><a id="lnk-site" target="_blank" rel="noopener">Live site</a> · <a id="lnk-blog" target="_blank" rel="noopener">Blog</a> · <a id="lnk-airlines" target="_blank" rel="noopener">Airlines</a> · <a id="lnk-sitemap" target="_blank" rel="noopener">sitemap.xml</a> · <a id="lnk-llms" target="_blank" rel="noopener">llms.txt</a> · <a id="lnk-repo" target="_blank" rel="noopener">GitHub repo</a></p>
       </div>
     </section>
 
     <!-- Posts -->
     <section data-view="posts" hidden>
       <div class="view-head">
-        <h1>Blog posts</h1>
-        <div class="row"><input id="post-search" type="search" placeholder="Search posts…"><a class="btn primary" href="#/editor">+ New post</a></div>
+        <h1 id="list-title">Blog posts</h1>
+        <div class="row"><input id="post-search" type="search" placeholder="Search posts…"><a class="btn primary" id="btn-new-item" href="#/editor">+ New post</a></div>
       </div>
       <table class="table"><thead><tr><th>Title</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody id="post-rows"><tr><td colspan="4" class="muted">Loading…</td></tr></tbody></table>
     </section>
@@ -95,7 +97,7 @@
       <form id="post-form" class="editor-grid" autocomplete="off">
         <div class="editor-main">
           <input class="title-input" name="title" placeholder="Post title" maxlength="150" required>
-          <div class="slug-row"><span class="muted">/blog/</span><input name="slug" placeholder="post-url-slug" pattern="[a-z0-9\-]+" maxlength="80"><span class="muted">/</span></div>
+          <div class="slug-row"><span class="muted" id="slug-prefix">/blog/</span><input name="slug" placeholder="post-url-slug" pattern="[a-z0-9\-]+" maxlength="80"><span class="muted">/</span></div>
           <div class="editor-toggle"><button type="button" class="linkish" id="toggle-html">Edit HTML</button></div>
           <div id="quill"></div>
           <textarea id="html-source" class="html-source" hidden spellcheck="false"></textarea>
