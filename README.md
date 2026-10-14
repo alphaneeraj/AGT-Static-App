@@ -20,7 +20,7 @@ Phone number used site-wide: **+1-888-609-1015** (edit it once in `site.config.j
                      (pages, blog, sitemap.xml, llms.txt, llms-full.txt, RSS, schema)
                                               │
                                               ▼
-                        static.app (designmodo/static-app-deploy-action)
+                        static.app (scripts/deploy-static-app.sh, curl → API)
 
  Quote forms on site ──insert──▶ Supabase `leads` table ◀──read── /admin/ Leads tab
 ```
