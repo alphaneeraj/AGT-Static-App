@@ -6,3 +6,4 @@ node_modules/
 .claude/
 *.zip
 dist-admin/
+export/

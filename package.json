@@ -2,12 +2,15 @@
   "name": "agt-static-app",
   "version": "1.0.0",
   "private": true,
-  "description": "Airlines Group Travel promotional site for static.app – static build with blog CMS and lead capture",
+  "description": "Airlines Group Travel promotional site for static.app \u2013 static build with blog CMS and lead capture",
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
     "serve": "node scripts/serve.mjs",
-    "dev": "node scripts/build.mjs && node scripts/serve.mjs"
+    "dev": "node scripts/build.mjs && node scripts/serve.mjs",
+    "export": "node scripts/export-pdf.mjs"
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  }
 }
