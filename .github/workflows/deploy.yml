@@ -48,14 +48,8 @@ jobs:
 
       - name: Deploy to static.app
         if: ${{ env.STATIC_APP_API_KEY != '' && env.STATIC_APP_PID != '' }}
-        uses: designmodo/static-app-deploy-action@v1.0.0
-        with:
-          api-key: ${{ secrets.STATIC_APP_API_KEY }}
-          pid: ${{ env.STATIC_APP_PID }}
-          build-dir: dist
-          # dist has no package.json – nothing to install. Keep .md out, but ship .txt/.xml.
-          install-command: 'true'
-          exclude: '.DS_Store'
+        # Own upload script: designmodo/static-app-deploy-action can't follow API redirects.
+        run: bash scripts/deploy-static-app.sh
 
       - name: Deployment skipped
         if: ${{ env.STATIC_APP_API_KEY == '' || env.STATIC_APP_PID == '' }}
